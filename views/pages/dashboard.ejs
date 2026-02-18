@@ -1,0 +1,11 @@
+<h2>Dashboard</h2>
+
+<% if (user) { %>
+  <p>Welcome <%= user.email %></p>
+<% } else { %>
+  <p>No user session found</p>
+<% } %>
+
+<form method="POST" action="/logout">
+  <button type="submit">Logout</button>
+</form>
