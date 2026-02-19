@@ -1,19 +1,36 @@
+<link rel="stylesheet" href="/styles/app.css">
+
 <h2>Your Accounts</h2>
 
-<% if (accounts.length === 0) { %>
-  <p>No accounts found</p>
-<% } else { %>
-  <ul>
-    <% accounts.forEach(function(acc){ %>
-      <li>
-        <strong><%= acc.name %></strong>
-        ( <%= acc.type %> )
-        — Balance: ₹<%= acc.balance %>
-      </li>
-    <% }) %>
-  </ul>
-<% } %>
+<div class="card">
 
-<br>
+  <% if (accounts.length === 0) { %>
+    <p>No accounts found</p>
+  <% } else { %>
 
-<a href="/dashboard">Back to dashboard</a>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Balance</th>
+      </tr>
+
+      <% accounts.forEach(function(acc){ %>
+        <tr>
+          <td><%= acc.name %></td>
+          <td><%= acc.type %></td>
+          <td>₹<%= acc.balance %></td>
+        </tr>
+      <% }) %>
+
+    </table>
+
+  <% } %>
+
+</div>
+
+<div class="card" style="text-align:center;">
+  <button type="button" onclick="location.href='/dashboard'">
+    ← Back to Dashboard
+  </button>
+</div>

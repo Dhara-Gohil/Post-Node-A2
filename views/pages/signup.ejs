@@ -2,43 +2,45 @@
 <html>
 <head>
     <title>Signup</title>
+    <link rel="stylesheet" href="/styles/app.css">
 </head>
 <body>
 
-<h2>Signup</h2>
+<div class="card" style="max-width:400px; margin:auto; margin-top:80px;">
 
-<% if (typeof error !== 'undefined') { %>
-    <p style="color:red;"><%= error %></p>
-<% } %>
+    <h2 style="text-align:center;">Create Account</h2>
 
-<form method="POST" action="/signup">
+    <% if (typeof error !== 'undefined') { %>
+        <p style="color:red; text-align:center;"><%= error %></p>
+    <% } %>
 
-    <input 
-        type="email" 
-        name="email" 
-        placeholder="Email"
-        value="<%= typeof email !== 'undefined' ? email : '' %>"
-        required
-    />
+    <form method="POST" action="/signup" style="display:flex; flex-direction:column; gap:10px;">
 
-    <br><br>
+        <input 
+            type="email" 
+            name="email" 
+            placeholder="Email"
+            value="<%= typeof email !== 'undefined' ? email : '' %>"
+            required
+        />
 
-    <input 
-        type="password" 
-        name="password" 
-        placeholder="Password (min 8)"
-        minlength="8"
-        required
-    />
+        <input 
+            type="password" 
+            name="password" 
+            placeholder="Password (min 8)"
+            minlength="8"
+            required
+        />
 
-    <br><br>
+        <button type="submit">Signup</button>
 
-    <button type="submit">Signup</button>
+    </form>
 
-</form>
+    <p style="text-align:center; margin-top:15px;">
+        <a href="/login">Already have an account? Login</a>
+    </p>
 
-<br>
-<a href="/login">Already have account? Login</a>
+</div>
 
 </body>
 </html>

@@ -1,77 +1,82 @@
+<link rel="stylesheet" href="/styles/app.css">
+
 <h2>Transaction History</h2>
 
-<a href="/dashboard">← Back to Dashboard</a>
+<div class="card" style="text-align:center;">
+  <button type="button" onclick="location.href='/dashboard'">
+    ← Back to Dashboard
+  </button>
+</div>
 
-<br><br>
+<div class="card">
 
-<% if (transactions.length === 0) { %>
-  <p>No transactions yet.</p>
-<% } else { %>
+  <% if (transactions.length === 0) { %>
+    <p>No transactions yet.</p>
+  <% } else { %>
 
-  <table border="1" cellpadding="8">
-    <tr>
-      <th>Date</th>
-      <th>Type</th>
-      <th>Amount</th>
-      <th>Account</th>
-      <th>Note</th>
-      <th>Operations</th>
-    </tr>
-
-    <% transactions.forEach(function(tx){ %>
+    <table>
       <tr>
-        <td><%= new Date(tx.createdAt).toLocaleDateString() %></td>
-        <td><%= tx.type %></td>
-        <td>₹<%= tx.amount %></td>
-        <td><%= tx.account ? tx.account.name : '-' %></td>
-        <td><%= tx.note || '-' %></td>
-        <td>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>Account</th>
+        <th>Note</th>
+        <th>Actions</th>
+      </tr>
+
+      <% transactions.forEach(function(tx){ %>
+
+        <tr>
+          <td><%= new Date(tx.createdAt).toLocaleDateString() %></td>
+          <td><%= tx.type %></td>
+          <td>₹<%= tx.amount %></td>
+          <td><%= tx.account ? tx.account.name : '-' %></td>
+          <td><%= tx.note || '-' %></td>
+          <td>
+
             <button type="button" onclick="toggleEdit('<%= tx.id %>')">Edit</button>
-            
 
             <form method="POST" action="/transactions/delete" style="display:inline;">
-            <input type="hidden" name="id" value="<%= tx.id %>" />
-            <button type="submit">Delete</button>
-          </form>
-        </td>
-      </tr>
-      <tr id="edit-<%= tx.id %>" style="display:none;">
-        <td colspan="6">
+              <input type="hidden" name="id" value="<%= tx.id %>" />
+              <button type="submit">Delete</button>
+            </form>
 
-          <form method="POST" action="/transactions/update">
+          </td>
+        </tr>
 
-            <input type="hidden" name="id" value="<%= tx.id %>" />
+        <tr id="edit-<%= tx.id %>" style="display:none;">
+          <td colspan="6">
 
-            <input type="number" name="amount" value="<%= tx.amount %>" required />
+            <form method="POST" action="/transactions/update" style="display:flex; gap:8px; flex-wrap:wrap;">
 
-            <select name="type">
-              <option value="expense" <%= tx.type==='expense'?'selected':'' %>>Expense</option>
-              <option value="income" <%= tx.type==='income'?'selected':'' %>>Income</option>
-            </select>
+              <input type="hidden" name="id" value="<%= tx.id %>" />
 
-            <button type="submit">Save</button>
+              <input type="number" name="amount" value="<%= tx.amount %>" required />
 
-          </form>
+              <select name="type">
+                <option value="expense" <%= tx.type==='expense'?'selected':'' %>>Expense</option>
+                <option value="income" <%= tx.type==='income'?'selected':'' %>>Income</option>
+              </select>
 
-        </td>
-      </tr>
+              <button type="submit">Save</button>
 
-    <% }) %>
+            </form>
 
-  </table>
+          </td>
+        </tr>
 
-<% } %>
+      <% }) %>
+
+    </table>
+
+  <% } %>
+
+</div>
 
 <script>
 function toggleEdit(id){
   const row = document.getElementById("edit-" + id);
   if(!row) return;
-
-  if(row.style.display === "none" || row.style.display === ""){
-    row.style.display = "table-row";
-  } else {
-    row.style.display = "none";
-  }
+  row.style.display = row.style.display === "none" ? "table-row" : "none";
 }
 </script>
-

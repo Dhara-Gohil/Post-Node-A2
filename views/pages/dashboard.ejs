@@ -1,117 +1,124 @@
+<link rel="stylesheet" href="/styles/app.css">
+
 <h2>Dashboard</h2>
 
-<% if (user) { %>
-  <p>Welcome <%= user.email %></p>
-<% } else { %>
-  <p>No user session found</p>
-<% } %>
+<div class="card">
+  <% if (user) { %>
+    <p>Welcome <strong><%= user.email %></strong></p>
+  <% } else { %>
+    <p>No user session found</p>
+  <% } %>
+</div>
 
-<h3>Add Transaction</h3>
+<div class="card">
+  <h3>Add Transaction</h3>
 
-<form method="POST" action="/transactions">
+  <form method="POST" action="/transactions" style="display:flex; gap:8px; flex-wrap:wrap;">
 
-  <input name="amount" type="number" placeholder="Amount" required />
-
-  <select name="type">
-    <option value="expense">Expense</option>
-    <option value="income">Income</option>
-  </select>
-
-  <select name="account" required>
-    <% accounts.forEach(function(acc){ %>
-      <option value="<%= acc.id %>">
-        <%= acc.name %>
-      </option>
-    <% }) %>
-  </select>
-
-  <input name="note" placeholder="Note (optional)" />
-
-  <button type="submit">Add</button>
-
-</form>
-
-<h3>Your Accounts</h3>
-
-<button type="button" onclick="toggleAccountForm()">Add Account</button>
-
-<div id="accountForm" style="display:none; margin-top:10px;">
-
-  <form method="POST" action="/accounts">
-    <input name="name" placeholder="Account name" required />
+    <input name="amount" type="number" placeholder="Amount" required />
 
     <select name="type">
-      <option value="cash">Cash</option>
-      <option value="bank">Bank</option>
-      <option value="wallet">Wallet</option>
-      <option value="upi">UPI</option>
+      <option value="expense">Expense</option>
+      <option value="income">Income</option>
     </select>
 
-    <button type="submit">Save</button>
+    <select name="account" required>
+      <% accounts.forEach(function(acc){ %>
+        <option value="<%= acc.id %>"><%= acc.name %></option>
+      <% }) %>
+    </select>
+
+    <input name="note" placeholder="Note (optional)" />
+
+    <button type="submit">Add</button>
+
   </form>
+</div>
+
+<div class="card">
+  <h3>Your Accounts</h3>
+
+  <button type="button" onclick="toggleAccountForm()">Add Account</button>
+
+  <div id="accountForm" style="display:none; margin-top:10px;">
+    <form method="POST" action="/accounts" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <input name="name" placeholder="Account name" required />
+
+      <select name="type">
+        <option value="cash">Cash</option>
+        <option value="bank">Bank</option>
+        <option value="wallet">Wallet</option>
+        <option value="upi">UPI</option>
+      </select>
+
+      <button type="submit">Save</button>
+    </form>
+  </div>
+
+  <p style="margin-top:10px;">
+    <strong>Total Balance: ₹<%= totalBalance %></strong>
+  </p>
+  <button type="button" onclick="window.location.href='/transactions'">
+  View History
+  </button>
+
+  <table style="margin-top:10px;">
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Balance</th>
+      <th>Actions</th>
+    </tr>
+
+    <% accounts.forEach(function(acc){ %>
+
+      <tr>
+        <td><%= acc.name %></td>
+        <td><%= acc.type %></td>
+        <td>₹<%= acc.balance %></td>
+        <td>
+
+          <button type="button" onclick="toggleRename('<%= acc.id %>')">Rename</button>
+
+          <form method="POST" action="/accounts/delete" style="display:inline;">
+            <input type="hidden" name="id" value="<%= acc.id %>" />
+            <button type="submit">Delete</button>
+          </form>
+
+        </td>
+      </tr>
+
+      <tr id="rename-<%= acc.id %>" style="display:none;">
+        <td colspan="4">
+          <form method="POST" action="/accounts/update" style="display:flex; gap:8px;">
+            <input type="hidden" name="id" value="<%= acc.id %>" />
+            <input name="name" value="<%= acc.name %>" required />
+            <button type="submit">Save</button>
+          </form>
+        </td>
+      </tr>
+
+    <% }) %>
+  </table>
 
 </div>
-<p>Total Balance: ₹<%= totalBalance %></p> <a href="/transactions">View Full History</a>
-<ul>
-  <% accounts.forEach(function(acc){ %>
 
-    <li style="margin-bottom:8px;">
+<div class="card">
+  <form method="POST" action="/logout">
+    <button type="submit">Logout</button>
+  </form>
+</div>
 
-      <strong><%= acc.name %></strong>
-      ( <%= acc.type %> )
-      — Balance: ₹<%= acc.balance %>
-
-      <!-- rename toggle -->
-      <button type="button" onclick="toggleRename('<%= acc.id %>')">Rename</button>
-
-      <!-- delete -->
-      <form method="POST" action="/accounts/delete" style="display:inline;">
-        <input type="hidden" name="id" value="<%= acc.id %>" />
-        <button type="submit">Delete</button>
-      </form>
-
-      <!-- hidden rename form -->
-      <div id="rename-<%= acc.id %>" style="display:none; margin-top:5px;">
-
-        <form method="POST" action="/accounts/update">
-
-  <input type="hidden" name="id" value="<%= acc.id %>" />
-
-  <input name="name" value="<%= acc.name %>" required />
-
-  <button type="submit">Save</button>
-
-</form>
-
-
-      </div>
-
-    </li>
-
-  <% }) %>
-</ul>
-
-
-<form method="POST" action="/logout">
-  <button type="submit">Logout</button>
-</form>
 <script>
   function toggleAccountForm() {
     const form = document.getElementById("accountForm");
     if (!form) return;
     form.style.display = form.style.display === "none" ? "block" : "none";
   }
-</script>
-<script>
+
   function toggleRename(id){
     const row = document.getElementById("rename-" + id);
     if(!row) return;
-
-    if(row.style.display === "none" || row.style.display === ""){
-      row.style.display = "block";
-    } else {
-      row.style.display = "none";
-    }
+    row.style.display = row.style.display === "none" ? "table-row" : "none";
   }
 </script>
-
