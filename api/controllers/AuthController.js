@@ -24,7 +24,6 @@ module.exports = {
           email,
         });
       }
-
       const existingUser = await User.findOne({ email });
 
       if (existingUser) {
@@ -33,13 +32,26 @@ module.exports = {
           email,
         });
       }
-
       const hashpassword = await bcrypt.hash(password, 10);
 
+      // new user creation
       const newUser = await User.create({
         email,
         password: hashpassword,
       }).fetch();
+
+      // create default account for new user
+      await Account.create({
+        name: "Default Account",
+        type: "cash",
+        balance: 0,
+        user: newUser.id,
+      });
+
+      //send welcome email (optional)
+      await sails.helpers.sendWelcomeEmail.with({
+        email: newUser.email,
+      });
 
       // auto-login after signup
       req.session.user = {

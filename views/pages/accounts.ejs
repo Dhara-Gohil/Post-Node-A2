@@ -1,0 +1,19 @@
+<h2>Your Accounts</h2>
+
+<% if (accounts.length === 0) { %>
+  <p>No accounts found</p>
+<% } else { %>
+  <ul>
+    <% accounts.forEach(function(acc){ %>
+      <li>
+        <strong><%= acc.name %></strong>
+        ( <%= acc.type %> )
+        — Balance: ₹<%= acc.balance %>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>
+
+<br>
+
+<a href="/dashboard">Back to dashboard</a>

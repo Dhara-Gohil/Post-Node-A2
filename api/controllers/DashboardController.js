@@ -17,8 +17,13 @@ module.exports = {
       return res.redirect('/login');
     }
 
+    //fetch user accounts from database
+    const accounts = await Account.find({ user: user.id });
+
+    // calculate total balance
+    const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
     // render dashboard safely
-    return res.view('pages/dashboard', { user });
+    return res.view('pages/dashboard', { user, accounts, totalBalance });
 
   }
 

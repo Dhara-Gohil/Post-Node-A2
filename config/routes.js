@@ -28,11 +28,42 @@ module.exports.routes = {
   'POST /login': 'AuthController.login',
   'POST /logout': 'AuthController.logout',
   'GET /login': { view: 'pages/login' },
+
   'GET /dashboard': {
     action: 'dashboard/index',
     policy: 'isLoggedIn'
   },
-
-
+  'GET /accounts': {
+    action: 'account/list',
+    policy: 'isLoggedIn'
+  },
+  'POST /accounts':{
+    action:'account/create',
+    policy:'isLoggedIn'
+  },
+  'POST /transactions': {
+    action: 'transaction/create',
+    policy: 'isLoggedIn'
+  },
+  'GET /transactions': {
+    action: 'transaction/history',
+    policy: 'isLoggedIn'
+  },
+  'POST /transactions/delete': {
+    action: 'transaction/delete',
+    policy: 'isLoggedIn'
+  },
+  'POST /transactions/update': {
+    action: 'transaction/update',
+    policy: 'isLoggedIn'
+  },
+  'POST /accounts/update': {
+    action: 'account/update',
+    policy: 'isLoggedIn'
+  },
+  'POST /accounts/delete': {
+    action: 'account/delete',
+    policy: 'isLoggedIn'
+  },
 
 };
