@@ -10,10 +10,23 @@
 
 <div class="card">
 
+  <form method="GET" action="/transactions" style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
+
+  <input type="text" name="search" placeholder="Search note..." value="<%= query.search || '' %>"/>
+
+  <select name="type">
+    <option value="">All Types</option>
+    <option value="income" <%= query.type==='income'?'selected':'' %>>Income</option>
+    <option value="expense" <%= query.type==='expense'?'selected':'' %>>Expense</option>
+  </select>
+
+  <button type="submit">Apply</button>
+
+</form>
+
   <% if (transactions.length === 0) { %>
     <p>No transactions yet.</p>
   <% } else { %>
-
     <table>
       <tr>
         <th>Date</th>
@@ -69,6 +82,26 @@
 
     </table>
 
+    <div style="margin-top:15px; text-align:center;">
+
+  <% if (page > 1) { %>
+    <a href="/transactions?page=<%= page-1 %>&search=<%= query.search || '' %>&type=<%= query.type || '' %>">
+      <button>Previous</button>
+    </a>
+  <% } %>
+
+  <span style="margin:0 10px;">
+    Page <%= page %> of <%= totalPages %>
+  </span>
+
+  <% if (page < totalPages) { %>
+    <a href="/transactions?page=<%= page+1 %>&search=<%= query.search || '' %>&type=<%= query.type || '' %>">
+      <button>Next</button>
+    </a>
+  <% } %>
+
+</div>
+
   <% } %>
 
 </div>
@@ -79,4 +112,25 @@ function toggleEdit(id){
   if(!row) return;
   row.style.display = row.style.display === "none" ? "table-row" : "none";
 }
+</script>
+
+<script>
+document.querySelectorAll('form[action="/transactions/delete"]').forEach(f=>{
+  f.addEventListener('submit', async function(e){
+    e.preventDefault();
+
+    const res = await fetch('/transactions/delete',{
+      method:'POST',
+      body:new FormData(this)
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      location.reload();
+    } else {
+      alert(data.message);
+    }
+  });
+});
 </script>

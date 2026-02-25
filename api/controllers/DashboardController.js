@@ -18,7 +18,7 @@ module.exports = {
     }
 
     //fetch user accounts from database
-    const accounts = await Account.find({ user: user.id });
+    const accounts = await Account.find({ user: user.id, isDeleted: false });
 
     // calculate total balance
     const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);

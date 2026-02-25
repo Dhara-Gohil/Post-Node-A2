@@ -24,10 +24,9 @@ module.exports = {
       type: 'string'
     },
 
-    date: {
-      type: 'ref',
-      columnType: 'datetime',
-      defaultsTo: new Date()
+    isDeleted:{
+      type: 'boolean',
+      defaultsTo: false
     },
 
     account: {

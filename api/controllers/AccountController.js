@@ -31,20 +31,19 @@ module.exports = {
         user: req.session.user.id,
       });
 
-      return res.redirect("/dashboard");
+      return res.json({ success: true, message: "Account created successfully" });
     } catch (err) {
       return res.serverError(err);
     }
   },
   update: async function (req, res) {
     try {
-      const user = req.session.user || req.user;
-      if (!user) return res.redirect("/login");
 
       const { id, name } = req.body;
 
       if (!id || !name) {
-        return res.redirect("/dashboard");
+        return res.json({success: false, message: "Missing required fields"});
+
       }
 
       const updated = await Account.updateOne({
@@ -59,7 +58,7 @@ module.exports = {
         console.log("Account update failed", id, user.id);
       }
 
-      return res.redirect("/dashboard");
+      return res.json({ success: true, message: "Account updated successfully" });
     } catch (err) {
       console.error(err);
       return res.serverError(err);
@@ -67,18 +66,17 @@ module.exports = {
   },
 
   delete: async function (req, res) {
-    const user = req.session.user || req.user;
-    if (!user) return res.redirect("/login");
 
     const { id } = req.body;
 
     // check total accounts of user
-    const total = await Account.count({ user: user.id });
+    const total = await Account.count({ user: req.session.user.id });
 
     // block if this is the only account
     if (total <= 1) {
       console.log("Cannot delete last account");
-      return res.redirect("/dashboard");
+      return res.json({success: false, message: "Cannot delete last account"});
+
     }
 
     // check transactions
@@ -89,13 +87,13 @@ module.exports = {
 
     if (txCount > 0) {
       console.log("Cannot delete account with transactions");
-      return res.redirect("/dashboard");
+      return res.json({success: false, message: "Cannot delete account with transactions"});
     }
 
     await Account.destroyOne({
       id,
       user: user.id,
     });
-    return res.redirect("/dashboard");
+    return res.json({ success: true, message: "Account deleted successfully" });
   },
 };

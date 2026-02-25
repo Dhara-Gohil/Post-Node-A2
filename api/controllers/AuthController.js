@@ -6,6 +6,8 @@
  */
 const bcrypt = require("bcrypt");
 
+
+// sign up controller with validation and error handling
 module.exports = {
   signup: async function (req, res) {
     try {
@@ -59,12 +61,14 @@ module.exports = {
         email: newUser.email,
       };
 
-      return res.redirect("/dashboard");
+      return res.json({ success: true, message: "Signup successful", user: req.session.user });
     } catch (err) {
       return res.serverError(err);
     }
   },
 
+
+  // login controller with validation and error handling
   login: async function (req, res) {
     try {
       const { email, password } = req.body;
@@ -106,6 +110,8 @@ module.exports = {
       return res.serverError(err);
     }
   },
+
+    // logout controller to destroy session and clear token cookie
   logout: async function (req, res) {
     req.session.destroy(function (err) {
       if (err) {

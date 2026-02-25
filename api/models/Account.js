@@ -6,28 +6,29 @@
  */
 
 module.exports = {
-
   attributes: {
     name: {
-      type: 'string',
-      required: true
+      type: "string",
+      required: true,
     },
 
     type: {
-      type: 'string',
-      defaultsTo: 'cash'
+      type: "string",
+      defaultsTo: "cash",
     },
 
     balance: {
-      type: 'number',
-      defaultsTo: 0
+      type: "number",
+      defaultsTo: 0,
     },
 
     user: {
-      model: 'user',
-      required: true
-    }
+      model: "user",
+      required: true,
+    },
+    isDeleted: {
+      type: "boolean",
+      defaultsTo: false,
+    },
   },
-
 };
-
