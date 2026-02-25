@@ -1,18 +1,22 @@
 /**
  * AuthController
  *
- * @description :: Server-side actions for handling incoming requests.
- * @help        :: See https://sailsjs.com/docs/concepts/actions
+ * Handles authentication:
+ *  - Signup (with validation + default account + welcome email)
+ *  - Login (with password verification + JWT + session)
+ *  - Logout (destroy session)
  */
+
 const bcrypt = require("bcrypt");
 
-
-// sign up controller with validation and error handling
 module.exports = {
+  // USER SIGNUP
+
   signup: async function (req, res) {
     try {
       const { email, password } = req.body;
 
+      // Basic validation
       if (!email || !password) {
         return res.view("pages/signup", {
           error: "Email and password are required",
@@ -20,29 +24,33 @@ module.exports = {
         });
       }
 
+      // Enforce minimum password length
       if (password.length < 8) {
         return res.view("pages/signup", {
           error: "Password must be at least 8 characters long",
           email,
         });
       }
-      const existingUser = await User.findOne({ email });
 
+      // Prevent duplicate accounts
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.view("pages/signup", {
           error: "Email already in use",
           email,
         });
       }
+
+      // Hash password before storing (never store plain passwords)
       const hashpassword = await bcrypt.hash(password, 10);
 
-      // new user creation
+      // Create new user
       const newUser = await User.create({
         email,
         password: hashpassword,
       }).fetch();
 
-      // create default account for new user
+      // Automatically create a default account for new users
       await Account.create({
         name: "Default Account",
         type: "cash",
@@ -50,73 +58,88 @@ module.exports = {
         user: newUser.id,
       });
 
-      //send welcome email (optional)
+      // Send welcome email (non-blocking business logic)
       await sails.helpers.sendWelcomeEmail.with({
         email: newUser.email,
       });
 
-      // auto-login after signup
+      // Auto-login user after signup (improves UX)
       req.session.user = {
         id: newUser.id,
         email: newUser.email,
       };
 
-      return res.json({ success: true, message: "Signup successful", user: req.session.user });
+      // Return JSON instead of redirect (frontend handles navigation)
+      return res.json({
+        success: true,
+        message: "Signup successful",
+        user: req.session.user,
+      });
     } catch (err) {
       return res.serverError(err);
     }
   },
 
-
-  // login controller with validation and error handling
+  // USER LOGIN
   login: async function (req, res) {
     try {
       const { email, password } = req.body;
 
+      // Validate input
       if (!email || !password) {
         return res.view("pages/login", {
           error: "Email and password required",
         });
       }
 
+      // Check if user exists
       const user = await User.findOne({ email });
-
       if (!user) {
-        return res.view("pages/login", { error: "Invalid email or password" });
+        return res.view("pages/login", {
+          error: "Invalid email or password",
+        });
       }
 
-      const bcrypt = require("bcrypt");
+      // Compare hashed password
       const match = await bcrypt.compare(password, user.password);
-
       if (!match) {
-        return res.view("pages/login", { error: "Invalid email or password" });
+        return res.view("pages/login", {
+          error: "Invalid email or password",
+        });
       }
 
-      // save session
+      // Store session for server-side authentication
       req.session.user = {
         id: user.id,
         email: user.email,
       };
+
+      // Generate JWT for API authentication / future mobile clients
       const token = await sails.helpers.generateJwt({
         user: req.session.user,
       });
 
-      // store token in cookie (optional but useful)
+      // Store JWT in secure httpOnly cookie (prevents JS access)
       res.cookie("token", token, { httpOnly: true });
 
-      // redirect to homepage or dashboard (even if not built yet)
+      // NOTE:
+      // Ideally frontend should handle redirect after JSON response,
+      // but keeping redirect here for now since views depend on it.
       return res.redirect("/dashboard");
     } catch (err) {
       return res.serverError(err);
     }
   },
 
-    // logout controller to destroy session and clear token cookie
+  // USER LOGOUT
   logout: async function (req, res) {
+    // Destroy session to fully log out user
     req.session.destroy(function (err) {
       if (err) {
         return res.serverError(err);
       }
+
+      // Redirect to login after logout
       return res.redirect("/login");
     });
   },
