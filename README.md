@@ -1,22 +1,73 @@
-# Expense Manager
+# Expense Manager (Sails.js)
 
-A simple web-based expense tracking app built with **Node.js, Sails.js, MongoDB, and EJS**.
+A web-based Expense Manager built using **Node.js + Sails.js + MongoDB + EJS** that allows users to manage accounts, track income/expenses, and transfer money between accounts.
 
-## Features
+---
 
-* User signup/login/logout with email validation
-* Welcome email on signup
-* Default account creation
-* Add, rename, and delete accounts
-* Add, edit, and delete transactions
-* Automatic balance updates
-* Transaction history sorted by latest
+## Features Implemented
 
-## Run Locally
+### Authentication
+
+* User signup with password validation
+* Login & logout using session auth
+* Welcome email on signup (Nodemailer)
+
+### Accounts
+
+* Default account created on signup
+* Create new accounts
+* Rename account
+* Delete account (with safeguards)
+* Total balance calculation
+
+### Transactions
+
+* Add Income / Expense / Transfer
+* Update transaction
+* Soft delete transaction (no permanent data loss)
+* Automatic balance updates on create/update/delete
+
+### Transaction History
+
+* Pagination
+* Search by note
+* Filter by type
+* Ordered by latest transaction first
+
+---
+
+## Tech Stack
+
+* Backend: **Sails.js**
+* Database: **MongoDB**
+* Templating: **EJS**
+* Auth: **Sessions + JWT ready**
+* Mail: **Nodemailer**
+
+---
+
+## Project Structure
+
+* `api/controllers` → Business logic
+* `api/models` → DB schema
+* `config/routes.js` → Route mapping
+* `views/pages` → UI pages
+* `assets/styles` → CSS
+
+---
+
+## How to Run
 
 ```bash
 npm install
-npm start
+sails lift
 ```
 
-Open: http://localhost:1337
+App runs on:
+
+```
+http://localhost:1337
+```
+
+---
+
