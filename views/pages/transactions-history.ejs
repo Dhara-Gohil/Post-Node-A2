@@ -43,7 +43,14 @@
           <td><%= new Date(tx.createdAt).toLocaleDateString() %></td>
           <td><%= tx.type %></td>
           <td>₹<%= tx.amount %></td>
-          <td><%= tx.account ? tx.account.name : '-' %></td>
+          <td>
+            <% if(tx.type === 'transfer'){ %>
+            <%= tx.fromAccount ? tx.fromAccount.name : '-' %> → <%= tx.toAccount ? tx.toAccount.name : '-' %>
+            <% } else { %>
+            <%= tx.fromAccount ? tx.fromAccount.name : '-' %>
+            <% } %>
+          </td>
+
           <td><%= tx.note || '-' %></td>
           <td>
 
@@ -62,18 +69,37 @@
 
             <form method="POST" action="/transactions/update" style="display:flex; gap:8px; flex-wrap:wrap;">
 
-              <input type="hidden" name="id" value="<%= tx.id %>" />
+  <input type="hidden" name="id" value="<%= tx.id %>" />
 
-              <input type="number" name="amount" value="<%= tx.amount %>" required />
+  <input type="number" name="amount" value="<%= tx.amount %>" required />
 
-              <select name="type">
-                <option value="expense" <%= tx.type==='expense'?'selected':'' %>>Expense</option>
-                <option value="income" <%= tx.type==='income'?'selected':'' %>>Income</option>
-              </select>
+  <select name="type">
+    <option value="expense" <%= tx.type==='expense'?'selected':'' %>>Expense</option>
+    <option value="income" <%= tx.type==='income'?'selected':'' %>>Income</option>
+    <option value="transfer" <%= tx.type==='transfer'?'selected':'' %>>Transfer</option>
+  </select>
 
-              <button type="submit">Save</button>
+  <select name="fromAccount">
+    <% accounts.forEach(acc => { %>
+      <option value="<%= acc.id %>" <%= tx.fromAccount==acc.id?'selected':'' %>>
+        <%= acc.name %>
+      </option>
+    <% }) %>
+  </select>
 
-            </form>
+  <select name="toAccount">
+    <option value="">None</option>
+    <% accounts.forEach(acc => { %>
+      <option value="<%= acc.id %>" <%= tx.toAccount==acc.id?'selected':'' %>>
+        <%= acc.name %>
+      </option>
+    <% }) %>
+  </select>
+
+  <button type="submit">Save</button>
+
+</form>
+
 
           </td>
         </tr>
@@ -134,3 +160,25 @@ document.querySelectorAll('form[action="/transactions/delete"]').forEach(f=>{
   });
 });
 </script>
+
+<script>
+document.querySelectorAll('form[action="/transactions/update"]').forEach(f=>{
+  f.addEventListener('submit', async function(e){
+    e.preventDefault();
+
+    const res = await fetch('/transactions/update',{
+      method:'POST',
+      body:new FormData(this)
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      location.reload();
+    } else {
+      alert(data.message || 'Update failed');
+    }
+  });
+});
+</script>
+

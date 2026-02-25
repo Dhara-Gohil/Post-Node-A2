@@ -20,13 +20,24 @@
     <select name="type">
       <option value="expense">Expense</option>
       <option value="income">Income</option>
+      <option value="transfer">Transfer</option>
     </select>
 
-    <select name="account" required>
-      <% accounts.forEach(function(acc){ %>
-        <option value="<%= acc.id %>"><%= acc.name %></option>
-      <% }) %>
-    </select>
+    <select name="fromAccount" required>
+  <option value="">Select Account</option>
+  <% accounts.forEach(acc => { %>
+    <option value="<%= acc.id %>"><%= acc.name %></option>
+  <% }) %>
+</select>
+
+<select name="toAccount">
+  <option value="">None</option>
+  <% accounts.forEach(acc => { %>
+    <option value="<%= acc.id %>"><%= acc.name %></option>
+  <% }) %>
+</select>
+
+
 
     <input name="note" placeholder="Note (optional)" />
 
@@ -122,3 +133,38 @@
     row.style.display = row.style.display === "none" ? "table-row" : "none";
   }
 </script>
+
+<script>
+document.querySelector('form[action="/transactions"]').addEventListener('submit', function(e){
+
+  const type = this.type.value;
+  const from = this.fromAccount.value;
+  const to   = this.toAccount.value;
+
+  if(type === 'transfer'){
+    if(!to){
+      alert('Select destination account for transfer');
+      e.preventDefault();
+      return;
+    }
+    if(from === to){
+      alert('Source and destination cannot be same');
+      e.preventDefault();
+      return;
+    }
+  }
+
+});
+</script>
+<script>
+const typeSelect = document.querySelector('select[name="type"]');
+const toSelect   = document.querySelector('select[name="toAccount"]');
+
+function toggleToAccount(){
+  toSelect.style.display = typeSelect.value === 'transfer' ? 'inline' : 'none';
+}
+
+typeSelect.addEventListener('change', toggleToAccount);
+toggleToAccount();
+</script>
+

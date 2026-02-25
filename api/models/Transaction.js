@@ -6,40 +6,33 @@
  */
 
 module.exports = {
-
   attributes: {
-
     amount: {
-      type: 'number',
-      required: true
+      type: "number",
+      required: true,
     },
 
     type: {
-      type: 'string',
-      isIn: ['income','expense'],
-      required: true
+      type: "string",
+      isIn: ["income", "expense", "transfer"],
+      required: true,
     },
 
     note: {
-      type: 'string'
+      type: "string",
     },
 
-    isDeleted:{
-      type: 'boolean',
-      defaultsTo: false
+    isDeleted: {
+      type: "boolean",
+      defaultsTo: false,
     },
 
-    account: {
-      model: 'account',
-      required: true
-    },
+    fromAccount: { model: "account", required: true },
+    toAccount: { model: "account" },
 
     user: {
-      model: 'user',
-      required: true
-    }
-
+      model: "user",
+      required: true,
+    },
   },
-
 };
-

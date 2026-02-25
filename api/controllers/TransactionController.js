@@ -11,35 +11,50 @@
 module.exports = {
   create: async function (req, res) {
     try {
-      const { amount, type, account, note } = req.body;
       const userId = req.session.user.id;
+      const { amount, type, fromAccount, toAccount, note } = req.body;
 
-      if (!amount || !type || !account) {
-        return res.json({ success: false, message: "Missing required fields" });
+      if (!amount || !type || !fromAccount) {
+        return res.json({ success: false, message: "Missing fields" });
       }
 
-      // create transaction
+      const amt = Number(amount);
+
       const tx = await Transaction.create({
-        amount: Number(amount),
+        amount: amt,
         type,
         note,
-        account,
+        fromAccount,
+        toAccount: toAccount || null,
         user: userId,
       }).fetch();
 
-      // update account balance
-      const acc = await Account.findOne({ id: account, user: userId });
+      const source = await Account.findOne({ id: fromAccount, user: userId });
+      if (!source) return res.json({ success: false });
 
-      if (acc) {
-        let newBalance = acc.balance;
+      if (type === "income") {
+        await Account.updateOne({ id: source.id }).set({
+          balance: source.balance + amt,
+        });
+      } else if (type === "expense") {
+        await Account.updateOne({ id: source.id }).set({
+          balance: source.balance - amt,
+        });
+      } else if (type === "transfer") {
+        const dest = await Account.findOne({ id: toAccount, user: userId });
+        if (!dest)
+          return res.json({ success: false, message: "Destination missing" });
 
-        if (type === "income") newBalance += tx.amount;
-        else newBalance -= tx.amount;
+        await Account.updateOne({ id: source.id }).set({
+          balance: source.balance - amt,
+        });
 
-        await Account.updateOne({ id: acc.id }).set({ balance: newBalance });
+        await Account.updateOne({ id: dest.id }).set({
+          balance: dest.balance + amt,
+        });
       }
 
-      return res.json({ success: true, transaction: tx });
+      return res.json({ success: true });
     } catch (err) {
       return res.serverError(err);
     }
@@ -50,6 +65,7 @@ module.exports = {
     try {
       const userId = req.session.user.id;
 
+      // for pagination
       const page = parseInt(req.query.page) || 1;
       const limit = 10;
       const skip = (page - 1) * limit;
@@ -58,24 +74,36 @@ module.exports = {
       const filter = { user: userId, isDeleted: false };
 
       if (req.query.type) filter.type = req.query.type;
-      if (req.query.account) filter.account = req.query.account;
+      if (req.query.account) {
+        filter.or = [
+          { fromAccount: req.query.account },
+          { toAccount: req.query.account },
+        ];
+      }
+
       if (req.query.search) filter.note = { contains: req.query.search };
 
       const total = await Transaction.count(filter);
 
       const transactions = await Transaction.find(filter)
-        .populate("account")
+        .populate("fromAccount")
+        .populate("toAccount")
         .sort("createdAt DESC")
         .skip(skip)
         .limit(limit);
 
       const totalPages = Math.ceil(total / limit);
+      const accounts = await Account.find({
+        user: userId,
+        isDeleted: false,
+      });
 
       return res.view("pages/transactions-history", {
         transactions,
         page,
         totalPages,
         query: req.query,
+        accounts,
       });
     } catch (err) {
       return res.serverError(err);
@@ -84,13 +112,13 @@ module.exports = {
 
   //  delete transaction and update account balance accordingly
   delete: async function (req, res) {
-    const user = req.session.user;
-    if (!user) {
-      return res.json({ success: false, message: "Not logged in" });
-    }
-    const userId = user.id;
     try {
-      const userId = req.session.user.id;
+      const user = req.session.user;
+      if (!user) {
+        return res.json({ success: false, message: "Not logged in" });
+      }
+
+      const userId = user.id;
       const { id } = req.body;
 
       const tx = await Transaction.findOne({
@@ -100,80 +128,140 @@ module.exports = {
       });
 
       if (!tx) {
-        return res.json({
-          success: false,
-          message: "Transaction not found",
+        return res.json({ success: false, message: "Transaction not found" });
+      }
+
+      // ===== HANDLE BALANCE REVERSAL =====
+
+      if (tx.type === "income") {
+        const acc = await Account.findOne({ id: tx.fromAccount, user: userId });
+        if (acc) {
+          await Account.updateOne({ id: acc.id }).set({
+            balance: acc.balance - tx.amount,
+          });
+        }
+      } else if (tx.type === "expense") {
+        const acc = await Account.findOne({ id: tx.fromAccount, user: userId });
+        if (acc) {
+          await Account.updateOne({ id: acc.id }).set({
+            balance: acc.balance + tx.amount,
+          });
+        }
+      } else if (tx.type === "transfer") {
+        const from = await Account.findOne({
+          id: tx.fromAccount,
+          user: userId,
         });
+        const to = await Account.findOne({ id: tx.toAccount, user: userId });
+
+        if (from) {
+          await Account.updateOne({ id: from.id }).set({
+            balance: from.balance + tx.amount,
+          });
+        }
+
+        if (to) {
+          await Account.updateOne({ id: to.id }).set({
+            balance: to.balance - tx.amount,
+          });
+        }
       }
 
-      const acc = await Account.findOne({
-        id: tx.account,
-        user: userId,
-        isDeleted: false,
-      });
-
-      if (acc) {
-        let newBalance = acc.balance;
-
-        // reverse old effect
-        if (tx.type === "income") newBalance -= tx.amount;
-        else newBalance += tx.amount;
-
-        await Account.updateOne({ id: acc.id }).set({ balance: newBalance });
-      }
-
-      // soft delete
+      // soft delete transaction
       await Transaction.updateOne({ id }).set({ isDeleted: true });
 
-      return res.json({
-        success: true,
-        message: "Deleted",
-      });
+      return res.json({ success: true, message: "Deleted" });
     } catch (err) {
       return res.serverError(err);
     }
   },
-
   update: async function (req, res) {
-    const { id, amount, type } = req.body;
+    try {
+      const userId = req.session.user.id;
+      const { id, amount, type, fromAccount, toAccount } = req.body;
+      const newAmount = Number(amount);
 
-    const tx = await Transaction.findOne({
-      id,
-      user: user.id,
-      isDeleted: false,
-    });
-    if (!tx)
-      return res.json({ success: false, message: "Transaction not found" });
+      const tx = await Transaction.findOne({
+        id,
+        user: userId,
+        isDeleted: false,
+      });
+      if (!tx)
+        return res.json({ success: false, message: "Transaction not found" });
 
-    const acc = await Account.findOne({
-      id: tx.account,
-      user: user.id,
-      isDeleted: false,
-    });
-    if (!acc) return res.json({ success: false, message: "Account not found" });
+      //  REVERSE OLD BALANCE
 
-    let balance = acc.balance;
+      if (tx.type === "income") {
+        const acc = await Account.findOne({ id: tx.fromAccount, user: userId });
+        if (acc)
+          await Account.updateOne({ id: acc.id }).set({
+            balance: acc.balance - tx.amount,
+          });
+      } else if (tx.type === "expense") {
+        const acc = await Account.findOne({ id: tx.fromAccount, user: userId });
+        if (acc)
+          await Account.updateOne({ id: acc.id }).set({
+            balance: acc.balance + tx.amount,
+          });
+      } else if (tx.type === "transfer") {
+        const from = await Account.findOne({
+          id: tx.fromAccount,
+          user: userId,
+        });
+        const to = await Account.findOne({ id: tx.toAccount, user: userId });
 
-    // remove old effect
-    if (tx.type === "income") balance -= tx.amount;
-    else balance += tx.amount;
+        if (from)
+          await Account.updateOne({ id: from.id, user: userId }).set({
+            balance: from.balance + tx.amount,
+          });
 
-    // apply new effect
-    const newAmount = Number(amount);
+        if (to)
+          await Account.updateOne({ id: to.id, user: userId }).set({
+            balance: to.balance - tx.amount,
+          });
+      }
 
-    if (type === "income") balance += newAmount;
-    else balance -= newAmount;
+      //  APPLY NEW BALANCE
 
-    await Account.updateOne({ id: acc.id }).set({ balance });
+      if (type === "income") {
+        const acc = await Account.findOne({ id: fromAccount, user: userId });
+        if (acc)
+          await Account.updateOne({ id: acc.id, user: userId }).set({
+            balance: acc.balance + newAmount,
+          });
+      } else if (type === "expense") {
+        const acc = await Account.findOne({ id: fromAccount, user: userId });
+        if (acc)
+          await Account.updateOne({ id: acc.id, user: userId }).set({
+            balance: acc.balance - newAmount,
+          });
+      } else if (type === "transfer") {
+        const from = await Account.findOne({ id: fromAccount, user: userId });
+        const to = await Account.findOne({ id: toAccount, user: userId });
 
-    await Transaction.updateOne({ id }).set({
-      amount: newAmount,
-      type,
-    });
+        if (from)
+          await Account.updateOne({ id: from.id, user: userId }).set({
+            balance: from.balance - newAmount,
+          });
 
-    return res.json({
-      success: true,
-      message: "Transaction updated successfully",
-    });
+        if (to)
+          await Account.updateOne({ id: to.id, user: userId }).set({
+            balance: to.balance + newAmount,
+          });
+      }
+
+      //UPDATE TRANSACTION RECORD
+
+      await Transaction.updateOne({ id }).set({
+        amount: newAmount,
+        type,
+        fromAccount,
+        toAccount: toAccount || null,
+      });
+
+      return res.json({ success: true });
+    } catch (err) {
+      return res.serverError(err);
+    }
   },
 };
